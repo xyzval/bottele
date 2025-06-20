@@ -2,7 +2,7 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import requests
 
-TOKEN = 'YOUR_BOT_TOKEN'
+TOKEN = '7571605934:AAHKtkmxvD2aNG9Jpwzw_2t46QDvIBMFUjo'
 API_KEY = 'Fv2dN2rKpjSPDDyBaX'
 
 product_list = {
