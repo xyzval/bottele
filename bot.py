@@ -2,13 +2,9 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import requests
 
-TOKEN = 'YOUR_BOT_TOKEN'
+TOKEN = '7571605934:AAHKtkmxvD2aNG9Jpwzw_2t46QDvIBMFUjo'
 API_KEY = 'Fv2dN2rKpjSPDDyBaX'
-
-product_list = {
-    "Kuota 10GB": 15000,
-    "Kuota 20GB": 25000
-}
+ADMIN_IDS = [5942781514]
 
 def get_list_paket():
     url = 'https://api.hesda-store.com/v2/list_paket'
@@ -28,19 +24,18 @@ def cek_saldo():
         return data['data']['saldo']
     return None
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user.first_name
-    keyboard = [[p] for p in product_list.keys()]
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
-    await update.message.reply_text(f"Halo {user}! Silakan pilih produk:", reply_markup=reply_markup)
+def order_kuota(nohp, kode):
+    url = 'https://api.hesda-store.com/v2/order'
+    data = {
+        'hesdastore': API_KEY,
+        'target': nohp,
+        'package_id': kode
+    }
+    res = requests.post(url, data=data)
+    return res.json()
 
-async def handle_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    item = update.message.text
-    if item in product_list:
-        price = product_list[item]
-        await update.message.reply_text(f"Kamu memilih: {item}\nHarga: Rp{price}\nSilakan transfer ke 08xxxxxxxx dan kirim bukti pembayaran.")
-    else:
-        await update.message.reply_text("Produk tidak dikenali.")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Selamat datang! Gunakan /paket untuk lihat paket.")
 
 async def show_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
     paket_list = get_list_paket()
@@ -48,25 +43,52 @@ async def show_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Gagal ambil paket dari API.")
         return
 
-    message = "📦 *Daftar Paket Kuota:*
-"
+    message = "📦 *Daftar Paket Kuota:*\n"
     for p in paket_list[:10]:
         message += f"\n• *{p['package_name_show']}*\nHarga: {p['harga']}\nKode: `{p['package_id']}`\n"
 
     await update.message.reply_text(message, parse_mode='Markdown')
 
 async def show_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in ADMIN_IDS:
+        return
     saldo = cek_saldo()
     if saldo is not None:
         await update.message.reply_text(f"💰 Saldo kamu saat ini: Rp {saldo:,}")
     else:
         await update.message.reply_text("❌ Gagal ambil saldo.")
 
+async def admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in ADMIN_IDS:
+        return
+    message = (
+        "👮 *Admin Menu:*\n"
+        "1. /saldo - Cek saldo\n"
+        "2. /paket - Lihat produk\n"
+        "3. /order <nohp> <kode> - Kirim pesanan\n"
+    )
+    await update.message.reply_text(message, parse_mode='Markdown')
+
+async def handle_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id not in ADMIN_IDS:
+        return
+
+    try:
+        _, nohp, kode = update.message.text.split()
+        result = order_kuota(nohp, kode)
+        if result["status"]:
+            await update.message.reply_text(f"✅ Order berhasil!\nTransaksi ID: {result['data']['trxid']}")
+        else:
+            await update.message.reply_text(f"❌ Gagal: {result['msg']}")
+    except:
+        await update.message.reply_text("❌ Format salah. Gunakan: /order 08xxxxxxx KODE")
+
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("paket", show_products))
+app.add_handler(CommandHandler("admin", admin_menu))
 app.add_handler(CommandHandler("saldo", show_saldo))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_order))
+app.add_handler(CommandHandler("paket", show_products))
+app.add_handler(CommandHandler("order", handle_order))
 
 if __name__ == '__main__':
     app.run_polling()
