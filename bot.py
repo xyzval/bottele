@@ -6,33 +6,45 @@ TOKEN = '7571605934:AAHKtkmxvD2aNG9Jpwzw_2t46QDvIBMFUjo'
 API_KEY = 'Fv2dN2rKpjSPDDyBaX'
 ADMIN_IDS = [5942781514]
 
+AUTH = ('r8149762@gmail.com', 'Lugoblok@1')
+
 def get_list_paket():
-    url = 'https://api.hesda-store.com/v2/list_paket'
-    params = {'hesdastore': API_KEY, 'jenis': 'nonotp'}
-    response = requests.get(url, params=params)
-    data = response.json()
-    if data['status']:
-        return data['data']
+    try:
+        url = 'https://api.hesda-store.com/v2/list_paket'
+        params = {'hesdastore': API_KEY, 'jenis': 'nonotp'}
+        response = requests.get(url, params=params, auth=AUTH)
+        data = response.json()
+        if data.get('status'):
+            return data['data']
+    except Exception as e:
+        print("PAKET ERROR:", e)
     return []
 
 def cek_saldo():
-    url = 'https://api.hesda-store.com/v2/saldo'
-    params = {'hesdastore': API_KEY}
-    res = requests.get(url, params=params)
-    data = res.json()
-    if data['status']:
-        return data['data']['saldo']
+    try:
+        url = 'https://api.hesda-store.com/v2/saldo'
+        params = {'hesdastore': API_KEY}
+        response = requests.get(url, params=params, auth=AUTH)
+        data = response.json()
+        if data.get('status'):
+            return data['data']['saldo']
+    except Exception as e:
+        print("SALDO ERROR:", e)
     return None
 
 def order_kuota(nohp, kode):
-    url = 'https://api.hesda-store.com/v2/order'
-    data = {
-        'hesdastore': API_KEY,
-        'target': nohp,
-        'package_id': kode
-    }
-    res = requests.post(url, data=data)
-    return res.json()
+    try:
+        url = 'https://api.hesda-store.com/v2/order'
+        data = {
+            'hesdastore': API_KEY,
+            'target': nohp,
+            'package_id': kode
+        }
+        res = requests.post(url, data=data, auth=AUTH)
+        return res.json()
+    except Exception as e:
+        print("ORDER ERROR:", e)
+        return {"status": False, "msg": "Terjadi kesalahan saat memesan."}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Selamat datang! Gunakan /paket untuk lihat paket.")
@@ -40,7 +52,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def show_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
     paket_list = get_list_paket()
     if not paket_list:
-        await update.message.reply_text("Gagal ambil paket dari API.")
+        await update.message.reply_text("❌ Gagal ambil paket dari API.")
         return
 
     message = "📦 *Daftar Paket Kuota:*\n"
