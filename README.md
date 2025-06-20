@@ -21,8 +21,8 @@ Jalankan perintah berikut di VPS:
 ```
 sudo apt update
 sudo apt install -y python3 python3-pip git
-git clone https://github.com/USERNAME/NAMA_REPO.git
-cd NAMA_REPO
+git clone https://github.com/xyzval/bottele.git
+cd bottele
 pip3 install -r requirements.txt
 nohup python3 bot.py &
 ```
